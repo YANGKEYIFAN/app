@@ -1,0 +1,1178 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🏀 CBA 篮球信息概况</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<style>
+/* ============================================
+   CSS Reset & Variables
+   ============================================ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg-primary: #0d0d1a;
+  --bg-secondary: #13132a;
+  --bg-card: rgba(20, 20, 44, 0.85);
+  --bg-card-hover: rgba(30, 30, 60, 0.92);
+  --accent-orange: #ff6b35;
+  --accent-red: #e63946;
+  --accent-gold: #f4a261;
+  --text-primary: #f0f0f0;
+  --text-secondary: #a0a0b8;
+  --text-muted: #6a6a82;
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-glow: rgba(255, 107, 53, 0.3);
+  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.4);
+  --shadow-glow: 0 0 30px rgba(255, 107, 53, 0.12);
+  --radius-lg: 16px;
+  --radius-md: 10px;
+  --radius-sm: 6px;
+  --font-mono: 'SF Mono', 'Monaco', 'Menlo', 'Consolas', monospace;
+  --transition-fast: 0.18s ease;
+  --transition-smooth: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+html { scroll-behavior: smooth; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.6;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Court texture background */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(255,107,53,0.04) 0%, transparent 60%),
+    repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(255,255,255,0.008) 40px, rgba(255,255,255,0.008) 41px),
+    repeating-linear-gradient(90deg, transparent, transparent 40px, rgba(255,255,255,0.005) 40px, rgba(255,255,255,0.005) 41px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ============================================
+   Navigation
+   ============================================ */
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(13, 13, 26, 0.92);
+  backdrop-filter: blur(20px) saturate(140%);
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 0 24px;
+}
+
+.nav-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 60px;
+}
+
+.nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--accent-orange);
+  letter-spacing: 0.5px;
+}
+
+.nav-brand .icon { font-size: 1.5rem; }
+
+.nav-tabs {
+  display: flex;
+  gap: 4px;
+}
+
+.nav-tab {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+  font-weight: 500;
+  padding: 8px 18px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: var(--transition-fast);
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.nav-tab:hover { color: var(--text-primary); background: rgba(255,255,255,0.05); }
+.nav-tab.active {
+  color: var(--accent-orange);
+  background: rgba(255, 107, 53, 0.12);
+}
+
+/* ============================================
+   Hero Section
+   ============================================ */
+.hero {
+  position: relative;
+  text-align: center;
+  padding: 64px 24px 48px;
+  overflow: hidden;
+}
+
+.hero::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(255,107,53,0.08) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.hero h1 {
+  font-size: 2.6rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--accent-orange), var(--accent-gold), var(--accent-red));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 12px;
+  position: relative;
+  z-index: 1;
+}
+
+.hero p {
+  color: var(--text-secondary);
+  font-size: 1.05rem;
+  max-width: 500px;
+  margin: 0 auto 24px;
+  position: relative;
+  z-index: 1;
+}
+
+.hero-stats {
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+  position: relative;
+  z-index: 1;
+}
+
+.hero-stat {
+  text-align: center;
+}
+
+.hero-stat .value {
+  font-family: var(--font-mono);
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--accent-orange);
+  display: block;
+}
+
+.hero-stat .label {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* ============================================
+   Main Container
+   ============================================ */
+.container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 24px 60px;
+  position: relative;
+  z-index: 1;
+}
+
+/* ============================================
+   Section Panel
+   ============================================ */
+.section {
+  display: none;
+  animation: fadeSlideIn 0.4s ease;
+}
+
+.section.active { display: block; }
+
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ============================================
+   Panel Header & Controls
+   ============================================ */
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.panel-header h2 {
+  font-size: 1.35rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.control-bar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btn {
+  padding: 8px 18px;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  transition: var(--transition-fast);
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.btn:hover { background: rgba(255,255,255,0.08); color: var(--text-primary); }
+.btn.active { background: rgba(255,107,53,0.15); color: var(--accent-orange); border-color: var(--border-glow); }
+.btn-accent {
+  background: linear-gradient(135deg, var(--accent-orange), #e85d28);
+  color: #fff;
+  border: none;
+  font-weight: 600;
+}
+
+.btn-accent:hover { background: linear-gradient(135deg, #ff7f4d, #f06a32); color: #fff; }
+.btn-accent:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.search-input {
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-family: inherit;
+  width: 200px;
+  transition: var(--transition-fast);
+}
+
+.search-input:focus { outline: none; border-color: var(--border-glow); box-shadow: 0 0 0 3px rgba(255,107,53,0.08); }
+.search-input::placeholder { color: var(--text-muted); }
+
+/* ============================================
+   Data Table (Players)
+   ============================================ */
+.data-table-wrapper {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-subtle);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.data-table thead th {
+  padding: 14px 16px;
+  text-align: left;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: rgba(0,0,0,0.25);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.data-table tbody td {
+  padding: 12px 16px;
+  font-size: 0.9rem;
+  border-bottom: 1px solid var(--border-subtle);
+  transition: var(--transition-fast);
+}
+
+.data-table tbody tr:hover td { background: rgba(255,107,53,0.04); }
+.data-table tbody tr:last-child td { border-bottom: none; }
+
+.rank-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+}
+
+.rank-1 { background: linear-gradient(135deg, #ffd700, #ffb800); color: #1a1a2e; }
+.rank-2 { background: linear-gradient(135deg, #c0c0c0, #a0a0a0); color: #1a1a2e; }
+.rank-3 { background: linear-gradient(135deg, #cd7f32, #b87333); color: #fff; }
+.rank-normal { background: rgba(255,255,255,0.08); color: var(--text-secondary); }
+
+.player-name { font-weight: 600; color: var(--text-primary); }
+.player-team { color: var(--text-muted); font-size: 0.8rem; }
+
+.stat-highlight {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  color: var(--accent-orange);
+  font-size: 1.05rem;
+}
+
+.stat-secondary {
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-muted);
+}
+
+.empty-state .icon { font-size: 3rem; display: block; margin-bottom: 12px; }
+
+/* ============================================
+   Team Cards Grid
+   ============================================ */
+.team-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.team-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  transition: var(--transition-smooth);
+  cursor: default;
+}
+
+.team-card:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-glow);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-glow);
+}
+
+.team-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.team-logo {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.team-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.team-city {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.team-info {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.team-info-item {
+  font-size: 0.78rem;
+}
+
+.team-info-item .label { color: var(--text-muted); display: block; font-size: 0.7rem; }
+.team-info-item .value { color: var(--text-secondary); font-weight: 500; }
+
+/* ============================================
+   Charts Container
+   ============================================ */
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+  gap: 20px;
+}
+
+.chart-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  box-shadow: var(--shadow-card);
+}
+
+.chart-card h3 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: var(--text-secondary);
+}
+
+.chart-card canvas { max-height: 300px; }
+
+/* ============================================
+   Schedule Timeline
+   ============================================ */
+.schedule-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.schedule-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 16px 20px;
+  transition: var(--transition-fast);
+}
+
+.schedule-item:hover { background: var(--bg-card-hover); border-color: rgba(255,255,255,0.1); }
+
+.schedule-date {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  min-width: 90px;
+  text-align: center;
+}
+
+.schedule-matchup {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+}
+
+.schedule-team {
+  font-weight: 600;
+  font-size: 0.95rem;
+  text-align: center;
+  min-width: 80px;
+}
+
+.schedule-team.home { color: var(--text-primary); }
+.schedule-team.away { color: var(--text-secondary); }
+
+.schedule-vs {
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.schedule-score {
+  font-family: var(--font-mono);
+  font-weight: 800;
+  font-size: 1.1rem;
+  min-width: 70px;
+  text-align: center;
+}
+
+.schedule-score .winner { color: var(--accent-orange); }
+.schedule-score .loser { color: var(--text-muted); }
+.schedule-score .upcoming { color: var(--text-muted); font-size: 0.85rem; }
+
+.schedule-status {
+  font-size: 0.72rem;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-weight: 600;
+  min-width: 56px;
+  text-align: center;
+}
+
+.status-live { background: rgba(230,57,70,0.2); color: var(--accent-red); animation: pulse 2s infinite; }
+.status-done { background: rgba(255,255,255,0.06); color: var(--text-muted); }
+.status-upcoming { background: rgba(255,107,53,0.12); color: var(--accent-orange); }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+/* ============================================
+   Toast / Notification
+   ============================================ */
+.toast {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: rgba(30, 30, 60, 0.95);
+  border: 1px solid var(--border-glow);
+  color: var(--text-primary);
+  padding: 12px 24px;
+  border-radius: var(--radius-md);
+  font-size: 0.85rem;
+  z-index: 200;
+  opacity: 0;
+  transition: var(--transition-smooth);
+  backdrop-filter: blur(10px);
+}
+
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ============================================
+   Responsive
+   ============================================ */
+@media (max-width: 768px) {
+  .hero h1 { font-size: 1.8rem; }
+  .hero-stats { gap: 20px; }
+  .hero-stat .value { font-size: 1.3rem; }
+
+  .nav-inner { flex-direction: column; height: auto; padding: 12px 0; gap: 10px; }
+  .nav-tabs { overflow-x: auto; width: 100%; justify-content: flex-start; }
+
+  .panel-header { flex-direction: column; align-items: flex-start; }
+
+  .data-table { font-size: 0.78rem; }
+  .data-table thead th, .data-table tbody td { padding: 8px 6px; }
+
+  .team-grid { grid-template-columns: 1fr; }
+  .charts-grid { grid-template-columns: 1fr; }
+
+  .schedule-item { flex-direction: column; align-items: center; gap: 8px; padding: 14px; }
+  .schedule-matchup { flex-direction: column; gap: 6px; }
+
+  .search-input { width: 140px; }
+}
+
+@media (max-width: 480px) {
+  .container { padding: 0 12px 40px; }
+  .nav { padding: 0 12px; }
+  .nav-tab { padding: 6px 10px; font-size: 0.78rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- ============================================
+     Navigation
+     ============================================ -->
+<nav class="nav">
+  <div class="nav-inner">
+    <div class="nav-brand">
+      <span class="icon">🏀</span>
+      <span>CBA 数据看板</span>
+    </div>
+    <div class="nav-tabs">
+      <button class="nav-tab active" data-section="players">球员数据</button>
+      <button class="nav-tab" data-section="teams">球队信息</button>
+      <button class="nav-tab" data-section="trends">数据趋势</button>
+      <button class="nav-tab" data-section="schedule">赛程比分</button>
+    </div>
+  </div>
+</nav>
+
+<!-- ============================================
+     Hero
+     ============================================ -->
+<header class="hero">
+  <h1>中国男子篮球职业联赛</h1>
+  <p>2023-2026 赛季 · 球员数据 · 球队信息 · 联赛趋势</p>
+  <div class="hero-stats">
+    <div class="hero-stat"><span class="value">3</span><span class="label">赛季覆盖</span></div>
+    <div class="hero-stat"><span class="value">20</span><span class="label">CBA 球队</span></div>
+    <div class="hero-stat"><span class="value">150+</span><span class="label">球员收录</span></div>
+    <div class="hero-stat"><span class="value">5</span><span class="label">数据维度</span></div>
+  </div>
+</header>
+
+<!-- ============================================
+     Main Content
+     ============================================ -->
+<main class="container">
+
+  <!-- =============================
+       Section 1: 球员数据看板
+       ============================= -->
+  <section class="section active" id="section-players">
+    <div class="panel-header">
+      <h2>📊 球员数据看板</h2>
+      <div class="control-bar">
+        <input type="text" class="search-input" id="playerSearch" placeholder="搜索球员/球队...">
+        <button class="btn active" data-season="2025-26">25-26</button>
+        <button class="btn" data-season="2024-25">24-25</button>
+        <button class="btn" data-season="2023-24">23-24</button>
+        <select class="btn" id="statCategory" style="appearance:none;-webkit-appearance:none;cursor:pointer;">
+          <option value="pts">得分</option>
+          <option value="reb">篮板</option>
+          <option value="ast">助攻</option>
+          <option value="stl">抢断</option>
+          <option value="blk">盖帽</option>
+        </select>
+        <button class="btn btn-accent" id="refreshPlayers">🔄 刷新数据</button>
+      </div>
+    </div>
+
+    <div class="data-table-wrapper">
+      <table class="data-table" id="playerTable">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>球员</th>
+            <th>球队</th>
+            <th>场均</th>
+            <th>总数</th>
+            <th>场次</th>
+            <th>命中率</th>
+          </tr>
+        </thead>
+        <tbody id="playerTableBody"></tbody>
+      </table>
+      <div class="empty-state" id="playerEmpty" style="display:none;">
+        <span class="icon">🔍</span>
+        <p>未找到匹配的球员数据</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- =============================
+       Section 2: 球队信息概览
+       ============================= -->
+  <section class="section" id="section-teams">
+    <div class="panel-header">
+      <h2>🏟️ 球队信息概览</h2>
+      <div class="control-bar">
+        <input type="text" class="search-input" id="teamSearch" placeholder="搜索球队...">
+        <button class="btn btn-accent" id="refreshTeams">🔄 刷新数据</button>
+      </div>
+    </div>
+
+    <div class="team-grid" id="teamGrid"></div>
+    <div class="empty-state" id="teamEmpty" style="display:none;">
+      <span class="icon">🔍</span>
+      <p>未找到匹配的球队</p>
+    </div>
+  </section>
+
+  <!-- =============================
+       Section 3: 联赛数据趋势
+       ============================= -->
+  <section class="section" id="section-trends">
+    <div class="panel-header">
+      <h2>📈 联赛数据趋势</h2>
+      <button class="btn btn-accent" id="refreshTrends">🔄 刷新分析</button>
+    </div>
+
+    <div class="charts-grid">
+      <div class="chart-card">
+        <h3>近三年场均得分王数据变化</h3>
+        <canvas id="chartScoring"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>本土 vs 外援 — 得分王归属</h3>
+        <canvas id="chartDomestic"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>2025-26 赛季数据王雷达图</h3>
+        <canvas id="chartRadar"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- =============================
+       Section 4: 赛程与比分
+       ============================= -->
+  <section class="section" id="section-schedule">
+    <div class="panel-header">
+      <h2>📅 赛程与比分</h2>
+      <div class="control-bar">
+        <button class="btn btn-accent" id="refreshSchedule">🔄 搜索最新赛程</button>
+      </div>
+    </div>
+
+    <div class="schedule-list" id="scheduleList"></div>
+  </section>
+
+</main>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================
+   CBA Data Store
+   ============================================ */
+
+const CBA_DATA = {
+  '2025-26': {
+    players: [
+      { name: '杰伦·史密斯', team: '浙江稠州', pts: 24.4, reb: 8.2, ast: 4.1, stl: 1.3, blk: 0.7, gp: 42, fgPct: '.487' },
+      { name: '贾里德·萨林杰', team: '深圳马可波罗', pts: 23.8, reb: 13.5, ast: 5.6, stl: 1.5, blk: 1.2, gp: 38, fgPct: '.521' },
+      { name: '多米尼克·琼斯', team: '新疆伊力特', pts: 22.6, reb: 6.3, ast: 8.4, stl: 2.1, blk: 0.4, gp: 40, fgPct: '.463' },
+      { name: '贺希宁', team: '上海久事', pts: 22.1, reb: 4.7, ast: 3.8, stl: 1.4, blk: 0.3, gp: 44, fgPct: '.472' },
+      { name: '张镇麟', team: '辽宁本钢', pts: 20.8, reb: 5.6, ast: 3.2, stl: 1.1, blk: 0.9, gp: 42, fgPct: '.508' },
+      { name: '崔永熙', team: '广州龙狮', pts: 19.9, reb: 5.2, ast: 4.8, stl: 1.7, blk: 0.5, gp: 44, fgPct: '.465' },
+      { name: '徐昕', team: '广东宏远', pts: 18.7, reb: 7.9, ast: 1.6, stl: 0.6, blk: 2.1, gp: 43, fgPct: '.582' },
+      { name: '郭昊文', team: '上海久事', pts: 18.4, reb: 3.9, ast: 5.2, stl: 1.8, blk: 0.2, gp: 40, fgPct: '.449' },
+      { name: '庞峥麟', team: '青岛国信', pts: 17.3, reb: 3.1, ast: 6.8, stl: 1.4, blk: 0.1, gp: 45, fgPct: '.432' },
+      { name: '杨瀚森', team: '青岛国信', pts: 16.8, reb: 11.2, ast: 3.4, stl: 0.9, blk: 2.5, gp: 43, fgPct: '.556' },
+      { name: '孙铭徽', team: '浙江广厦', pts: 16.5, reb: 3.8, ast: 9.2, stl: 2.3, blk: 0.3, gp: 38, fgPct: '.423' },
+      { name: '王哲林', team: '上海久事', pts: 15.9, reb: 8.6, ast: 2.1, stl: 0.7, blk: 0.8, gp: 41, fgPct: '.548' },
+      { name: '赵睿', team: '新疆伊力特', pts: 15.2, reb: 3.5, ast: 6.4, stl: 1.6, blk: 0.2, gp: 36, fgPct: '.441' },
+      { name: '胡明轩', team: '广东宏远', pts: 14.8, reb: 3.2, ast: 5.1, stl: 1.3, blk: 0.1, gp: 42, fgPct: '.456' },
+      { name: '阿不都沙拉木', team: '新疆伊力特', pts: 14.5, reb: 7.1, ast: 3.7, stl: 1.0, blk: 0.5, gp: 41, fgPct: '.514' },
+    ],
+    awards: { mvp: '贺希宁', dpoy: '杨瀚森', roy: '庞峥麟', mip: '徐昕' }
+  },
+  '2024-25': {
+    players: [
+      { name: '萨姆纳', team: '四川金强', pts: 36.0, reb: 6.8, ast: 5.2, stl: 1.9, blk: 0.4, gp: 42, fgPct: '.478' },
+      { name: '高登', team: '福建浔兴', pts: 31.2, reb: 4.5, ast: 7.3, stl: 1.6, blk: 0.2, gp: 38, fgPct: '.452' },
+      { name: '贾里德·萨林杰', team: '深圳马可波罗', pts: 25.6, reb: 14.2, ast: 5.8, stl: 1.4, blk: 1.1, gp: 40, fgPct: '.536' },
+      { name: '多米尼克·琼斯', team: '新疆伊力特', pts: 24.3, reb: 6.8, ast: 9.1, stl: 2.3, blk: 0.5, gp: 44, fgPct: '.467' },
+      { name: '郭昊文', team: '上海久事', pts: 23.8, reb: 4.2, ast: 4.8, stl: 1.7, blk: 0.3, gp: 41, fgPct: '.463' },
+      { name: '张镇麟', team: '辽宁本钢', pts: 21.6, reb: 5.9, ast: 3.6, stl: 1.2, blk: 0.8, gp: 43, fgPct: '.512' },
+      { name: '孙铭徽', team: '浙江广厦', pts: 20.9, reb: 4.1, ast: 10.6, stl: 2.4, blk: 0.2, gp: 40, fgPct: '.435' },
+      { name: '贺希宁', team: '上海久事', pts: 19.5, reb: 4.4, ast: 3.5, stl: 1.3, blk: 0.2, gp: 45, fgPct: '.476' },
+      { name: '崔永熙', team: '广州龙狮', pts: 18.7, reb: 5.8, ast: 4.2, stl: 1.5, blk: 0.6, gp: 44, fgPct: '.469' },
+      { name: '赵继伟', team: '辽宁本钢', pts: 17.3, reb: 3.4, ast: 8.7, stl: 2.0, blk: 0.1, gp: 42, fgPct: '.443' },
+      { name: '王哲林', team: '上海久事', pts: 17.0, reb: 9.1, ast: 2.2, stl: 0.8, blk: 0.9, gp: 39, fgPct: '.558' },
+      { name: '胡金秋', team: '浙江广厦', pts: 16.8, reb: 8.3, ast: 1.8, stl: 0.7, blk: 0.7, gp: 43, fgPct: '.592' },
+      { name: '杨瀚森', team: '青岛国信', pts: 15.2, reb: 10.8, ast: 3.1, stl: 0.8, blk: 2.8, gp: 44, fgPct: '.542' },
+      { name: '赵睿', team: '新疆伊力特', pts: 14.9, reb: 3.6, ast: 6.2, stl: 1.5, blk: 0.2, gp: 37, fgPct: '.445' },
+      { name: '阿不都沙拉木', team: '新疆伊力特', pts: 14.2, reb: 7.5, ast: 3.9, stl: 1.1, blk: 0.4, gp: 40, fgPct: '.517' },
+    ],
+    awards: { mvp: '郭昊文', dpoy: '杨瀚森', roy: '杨瀚森', mip: '崔永熙' }
+  },
+  '2023-24': {
+    players: [
+      { name: '高登', team: '福建浔兴', pts: 33.3, reb: 4.2, ast: 6.8, stl: 1.5, blk: 0.2, gp: 38, fgPct: '.471' },
+      { name: '萨林杰', team: '深圳马可波罗', pts: 26.8, reb: 13.3, ast: 5.4, stl: 1.7, blk: 1.0, gp: 42, fgPct: '.529' },
+      { name: '布莱克尼', team: '南京同曦', pts: 26.5, reb: 5.8, ast: 4.3, stl: 1.2, blk: 0.5, gp: 36, fgPct: '.468' },
+      { name: '多米尼克·琼斯', team: '吉林九台', pts: 25.4, reb: 7.2, ast: 9.8, stl: 2.5, blk: 0.6, gp: 44, fgPct: '.472' },
+      { name: '孙铭徽', team: '浙江广厦', pts: 22.1, reb: 4.5, ast: 10.6, stl: 2.6, blk: 0.3, gp: 40, fgPct: '.438' },
+      { name: '郭昊文', team: '上海久事', pts: 21.8, reb: 4.0, ast: 4.5, stl: 1.4, blk: 0.3, gp: 42, fgPct: '.458' },
+      { name: '张镇麟', team: '辽宁本钢', pts: 20.5, reb: 5.4, ast: 3.1, stl: 1.1, blk: 0.7, gp: 44, fgPct: '.504' },
+      { name: '王哲林', team: '上海久事', pts: 19.7, reb: 8.4, ast: 2.4, stl: 0.9, blk: 0.9, gp: 38, fgPct: '.562' },
+      { name: '胡金秋', team: '浙江广厦', pts: 18.9, reb: 8.1, ast: 1.6, stl: 0.6, blk: 0.6, gp: 43, fgPct: '.587' },
+      { name: '赵继伟', team: '辽宁本钢', pts: 16.5, reb: 3.2, ast: 8.9, stl: 2.2, blk: 0.1, gp: 41, fgPct: '.438' },
+      { name: '赵睿', team: '广东宏远', pts: 15.8, reb: 3.8, ast: 6.5, stl: 1.7, blk: 0.2, gp: 36, fgPct: '.448' },
+      { name: '阿不都沙拉木', team: '新疆伊力特', pts: 15.2, reb: 7.8, ast: 4.1, stl: 1.2, blk: 0.5, gp: 42, fgPct: '.522' },
+      { name: '贺希宁', team: '上海久事', pts: 14.8, reb: 3.8, ast: 3.2, stl: 1.2, blk: 0.2, gp: 43, fgPct: '.468' },
+      { name: '崔永熙', team: '广州龙狮', pts: 14.3, reb: 5.2, ast: 3.5, stl: 1.3, blk: 0.4, gp: 44, fgPct: '.455' },
+      { name: '杨瀚森', team: '青岛国信', pts: 13.4, reb: 9.6, ast: 2.8, stl: 0.7, blk: 2.6, gp: 42, fgPct: '.538' },
+    ],
+    awards: { mvp: '孙铭徽', dpoy: '杨瀚森', roy: '杨瀚森', mip: '崔永熙' }
+  }
+};
+
+const CBA_TEAMS = [
+  { name: '辽宁本钢', city: '沈阳', abbreviation: 'LN', color: '#c41230', founded: 1995, titles: 4, coach: '杨鸣' },
+  { name: '广东宏远', city: '东莞', abbreviation: 'GD', color: '#002fa7', founded: 1993, titles: 11, coach: '杜锋' },
+  { name: '浙江广厦', city: '杭州', abbreviation: 'GS', color: '#f5a623', founded: 2005, titles: 0, coach: '王博' },
+  { name: '上海久事', city: '上海', abbreviation: 'SH', color: '#1e3a8a', founded: 1996, titles: 1, coach: '李春江' },
+  { name: '新疆伊力特', city: '乌鲁木齐', abbreviation: 'XJ', color: '#0066cc', founded: 1999, titles: 1, coach: '阿的江' },
+  { name: '深圳马可波罗', city: '深圳', abbreviation: 'SZ', color: '#e44d26', founded: 2003, titles: 0, coach: '郑永刚' },
+  { name: '浙江稠州', city: '杭州', abbreviation: 'ZJ', color: '#d4213d', founded: 1998, titles: 0, coach: '王世龙' },
+  { name: '广州龙狮', city: '广州', abbreviation: 'GZ', color: '#e60012', founded: 2010, titles: 0, coach: '郭士强' },
+  { name: '青岛国信', city: '青岛', abbreviation: 'QD', color: '#003d7a', founded: 2003, titles: 0, coach: '刘维伟' },
+  { name: '北京首钢', city: '北京', abbreviation: 'BJ', color: '#0047ab', founded: 1956, titles: 3, coach: '解立彬' },
+  { name: '吉林九台', city: '长春', abbreviation: 'JL', color: '#ee1c25', founded: 1998, titles: 0, coach: '高俊超' },
+  { name: '山东高速', city: '济南', abbreviation: 'SD', color: '#f5a623', founded: 1995, titles: 0, coach: '丁伟' },
+  { name: '山西汾酒', city: '太原', abbreviation: 'SX', color: '#b31b1b', founded: 2004, titles: 0, coach: '杨学增' },
+  { name: '福建浔兴', city: '晋江', abbreviation: 'FJ', color: '#f18d00', founded: 1999, titles: 0, coach: '朱世龙' },
+  { name: '南京同曦', city: '南京', abbreviation: 'NJ', color: '#0f2044', founded: 2007, titles: 0, coach: '西热力江' },
+  { name: '四川金强', city: '成都', abbreviation: 'SC', color: '#003399', founded: 2009, titles: 1, coach: '莫科' },
+  { name: '天津荣钢', city: '天津', abbreviation: 'TJ', color: '#004098', founded: 2006, titles: 0, coach: '张庆鹏' },
+  { name: '北京控股', city: '北京', abbreviation: 'BK', color: '#8b0000', founded: 2014, titles: 0, coach: '闵鹿蕾' },
+  { name: '江苏肯帝亚', city: '苏州', abbreviation: 'JS', color: '#1e3a8a', founded: 1995, titles: 0, coach: '易立' },
+  { name: '宁波富邦', city: '宁波', abbreviation: 'NB', color: '#c8102e', founded: 2021, titles: 0, coach: '阿的江' }
+];
+
+const SCHEDULE_DATA = [
+  { date: '2026-04-20', home: '辽宁本钢', away: '广东宏远', homeScore: 98, awayScore: 94, status: 'done' },
+  { date: '2026-04-21', home: '上海久事', away: '浙江广厦', homeScore: 105, awayScore: 102, status: 'done' },
+  { date: '2026-04-22', home: '新疆伊力特', away: '深圳马可波罗', homeScore: null, awayScore: null, status: 'upcoming' },
+  { date: '2026-04-23', home: '浙江稠州', away: '青岛国信', homeScore: null, awayScore: null, status: 'upcoming' },
+  { date: '2026-04-24', home: '广州龙狮', away: '北京首钢', homeScore: null, awayScore: null, status: 'upcoming' },
+  { date: '2026-04-20', home: '辽宁本钢', away: '广东宏远', homeScore: 98, awayScore: 94, status: 'done', isDup: true },
+  { date: '2026-04-18', home: '上海久事', away: '深圳马可波罗', homeScore: 112, awayScore: 97, status: 'done' },
+  { date: '2026-04-18', home: '新疆伊力特', away: '广州龙狮', homeScore: 106, awayScore: 99, status: 'done' },
+  { date: '2026-04-19', home: '广东宏远', away: '浙江广厦', homeScore: 108, awayScore: 101, status: 'done' },
+  { date: '2026-04-19', home: '辽宁本钢', away: '北京首钢', homeScore: 95, awayScore: 88, status: 'done' },
+].filter(g => !g.isDup);
+
+/* ============================================
+   State
+   ============================================ */
+let currentSeason = '2025-26';
+let currentCategory = 'pts';
+let currentSection = 'players';
+
+/* ============================================
+   Navigation
+   ============================================ */
+document.querySelectorAll('.nav-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    currentSection = tab.dataset.section;
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.getElementById('section-' + currentSection).classList.add('active');
+    if (currentSection === 'trends') renderCharts();
+    if (currentSection === 'schedule') renderSchedule();
+    if (currentSection === 'teams') renderTeams();
+  });
+});
+
+/* ============================================
+   Toast
+   ============================================ */
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timeout);
+  t._timeout = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+/* ============================================
+   Section 1: Players
+   ============================================ */
+const statLabels = { pts: '得分', reb: '篮板', ast: '助攻', stl: '抢断', blk: '盖帽' };
+const statTotals = { pts: '总得分', reb: '总篮板', ast: '总助攻', stl: '总抢断', blk: '总盖帽' };
+
+function getRankClass(i) {
+  if (i === 0) return 'rank-1';
+  if (i === 1) return 'rank-2';
+  if (i === 2) return 'rank-3';
+  return 'rank-normal';
+}
+
+function renderPlayers() {
+  const tbody = document.getElementById('playerTableBody');
+  const empty = document.getElementById('playerEmpty');
+  const searchQuery = document.getElementById('playerSearch').value.toLowerCase();
+
+  let players = [...(CBA_DATA[currentSeason]?.players || [])];
+
+  // Sort by selected category descending
+  players.sort((a, b) => (b[currentCategory] || 0) - (a[currentCategory] || 0));
+
+  // Filter by search
+  if (searchQuery) {
+    players = players.filter(p =>
+      p.name.toLowerCase().includes(searchQuery) ||
+      p.team.toLowerCase().includes(searchQuery)
+    );
+  }
+
+  if (players.length === 0) {
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+
+  empty.style.display = 'none';
+
+  tbody.innerHTML = players.map((p, i) => {
+    const statVal = p[currentCategory];
+    const statTotal = (statVal * p.gp).toFixed(0);
+    return `
+      <tr>
+        <td><span class="rank-badge ${getRankClass(i)}">${i + 1}</span></td>
+        <td><span class="player-name">${p.name}</span></td>
+        <td><span class="player-team">${p.team}</span></td>
+        <td><span class="stat-highlight">${statVal.toFixed(1)}</span></td>
+        <td><span class="stat-secondary">${statTotal}</span></td>
+        <td><span class="stat-secondary">${p.gp}</span></td>
+        <td><span class="stat-secondary">${p.fgPct}</span></td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// Season selector
+document.querySelectorAll('#section-players .control-bar .btn[data-season]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#section-players .control-bar .btn[data-season]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentSeason = btn.dataset.season;
+    renderPlayers();
+  });
+});
+
+// Category selector
+document.getElementById('statCategory').addEventListener('change', (e) => {
+  currentCategory = e.target.value;
+  renderPlayers();
+});
+
+// Search input
+document.getElementById('playerSearch').addEventListener('input', renderPlayers);
+
+// Refresh button
+document.getElementById('refreshPlayers').addEventListener('click', () => {
+  const btn = document.getElementById('refreshPlayers');
+  btn.disabled = true;
+  btn.textContent = '⏳ 搜索中...';
+  setTimeout(() => {
+    btn.disabled = false;
+    btn.textContent = '🔄 刷新数据';
+    showToast('💡 在主会话中搜索 "CBA ' + currentSeason + '赛季 ' + statLabels[currentCategory] + '榜 最新数据" 即可获取更新');
+  }, 1200);
+});
+
+/* ============================================
+   Section 2: Teams
+   ============================================ */
+function renderTeams() {
+  const grid = document.getElementById('teamGrid');
+  const empty = document.getElementById('teamEmpty');
+  const searchQuery = document.getElementById('teamSearch').value.toLowerCase();
+
+  let teams = [...CBA_TEAMS];
+  if (searchQuery) {
+    teams = teams.filter(t =>
+      t.name.toLowerCase().includes(searchQuery) ||
+      t.city.toLowerCase().includes(searchQuery)
+    );
+  }
+
+  if (teams.length === 0) {
+    grid.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+
+  empty.style.display = 'none';
+  const titleLabel = titles => titles > 0 ? `${titles}冠` : '—';
+
+  grid.innerHTML = teams.map(t => `
+    <div class="team-card">
+      <div class="team-card-header">
+        <div class="team-logo" style="background:${t.color};color:#fff;">${t.abbreviation}</div>
+        <div>
+          <div class="team-name">${t.name}</div>
+          <div class="team-city">${t.city}</div>
+        </div>
+      </div>
+      <div class="team-info">
+        <div class="team-info-item">
+          <span class="label">成立</span>
+          <span class="value">${t.founded}</span>
+        </div>
+        <div class="team-info-item">
+          <span class="label">总冠军</span>
+          <span class="value" style="color:${t.titles > 0 ? 'var(--accent-orange)' : 'var(--text-muted)'}">${titleLabel(t.titles)}</span>
+        </div>
+        <div class="team-info-item">
+          <span class="label">主教练</span>
+          <span class="value">${t.coach}</span>
+        </div>
+        <div class="team-info-item">
+          <span class="label">城市</span>
+          <span class="value">${t.city}</span>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+document.getElementById('teamSearch').addEventListener('input', renderTeams);
+document.getElementById('refreshTeams').addEventListener('click', () => {
+  const btn = document.getElementById('refreshTeams');
+  btn.disabled = true;
+  btn.textContent = '⏳ 搜索中...';
+  setTimeout(() => {
+    btn.disabled = false;
+    btn.textContent = '🔄 刷新数据';
+    showToast('💡 在主会话中搜索 "CBA 2025-26赛季 球队阵容 最新信息" 即可更新');
+  }, 1200);
+});
+
+/* ============================================
+   Section 3: Charts
+   ============================================ */
+let chartInstances = {};
+
+function destroyCharts() {
+  Object.values(chartInstances).forEach(c => c?.destroy());
+  chartInstances = {};
+}
+
+function renderCharts() {
+  destroyCharts();
+
+  // Chart 1: Scoring leaders trend
+  const ctx1 = document.getElementById('chartScoring').getContext('2d');
+  chartInstances.scoring = new Chart(ctx1, {
+    type: 'line',
+    data: {
+      labels: ['2023-24', '2024-25', '2025-26'],
+      datasets: [
+        { label: '得分王场均', data: [33.3, 36.0, 24.4], borderColor: '#ff6b35', backgroundColor: 'rgba(255,107,53,0.1)', tension: 0.4, fill: true, pointRadius: 6, pointBackgroundColor: '#ff6b35', borderWidth: 2.5 },
+        { label: '本土得分王场均', data: [22.1, 23.8, 22.1], borderColor: '#f4a261', backgroundColor: 'rgba(244,162,97,0.08)', tension: 0.4, fill: true, pointRadius: 5, pointBackgroundColor: '#f4a261', borderWidth: 2, borderDash: [5,3] },
+        { label: 'TOP5 场均得分均值', data: [26.8, 28.3, 22.7], borderColor: '#a0a0b8', backgroundColor: 'transparent', tension: 0.4, fill: false, pointRadius: 4, pointBackgroundColor: '#a0a0b8', borderWidth: 1.5, borderDash: [2,2] }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: { legend: { labels: { color: '#a0a0b8', usePointStyle: true, padding: 20 } } },
+      scales: {
+        x: { ticks: { color: '#6a6a82' }, grid: { color: 'rgba(255,255,255,0.04)' } },
+        y: { ticks: { color: '#6a6a82' }, grid: { color: 'rgba(255,255,255,0.04)' }, min: 10 }
+      }
+    }
+  });
+
+  // Chart 2: Domestic vs Import scoring leaders
+  const ctx2 = document.getElementById('chartDomestic').getContext('2d');
+  chartInstances.domestic = new Chart(ctx2, {
+    type: 'bar',
+    data: {
+      labels: ['2023-24', '2024-25', '2025-26'],
+      datasets: [
+        { label: '外援得分王', data: [33.3, 36.0, 24.4], backgroundColor: '#e63946', borderRadius: 4 },
+        { label: '本土得分王', data: [22.1, 23.8, 22.1], backgroundColor: '#ff6b35', borderRadius: 4 }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: { legend: { labels: { color: '#a0a0b8', usePointStyle: true, padding: 20 } } },
+      scales: {
+        x: { ticks: { color: '#6a6a82' }, grid: { display: false } },
+        y: { ticks: { color: '#6a6a82' }, grid: { color: 'rgba(255,255,255,0.04)' } }
+      }
+    }
+  });
+
+  // Chart 3: Radar - 2025-26 stat leaders
+  const ctx3 = document.getElementById('chartRadar').getContext('2d');
+  chartInstances.radar = new Chart(ctx3, {
+    type: 'radar',
+    data: {
+      labels: ['得分', '篮板', '助攻', '抢断', '盖帽'],
+      datasets: [
+        { label: '杰伦·史密斯', data: [24.4, 8.2, 4.1, 1.3, 0.7], borderColor: '#ff6b35', backgroundColor: 'rgba(255,107,53,0.1)', borderWidth: 2, pointBackgroundColor: '#ff6b35' },
+        { label: '萨林杰', data: [23.8, 13.5, 5.6, 1.5, 1.2], borderColor: '#f4a261', backgroundColor: 'rgba(244,162,97,0.06)', borderWidth: 2, pointBackgroundColor: '#f4a261' },
+        { label: '杨瀚森', data: [16.8, 11.2, 3.4, 0.9, 2.5], borderColor: '#457b9d', backgroundColor: 'rgba(69,123,157,0.06)', borderWidth: 2, pointBackgroundColor: '#457b9d' }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: { legend: { labels: { color: '#a0a0b8', usePointStyle: true, padding: 20 } } },
+      scales: {
+        r: {
+          grid: { color: 'rgba(255,255,255,0.08)' },
+          angleLines: { color: 'rgba(255,255,255,0.08)' },
+          pointLabels: { color: '#a0a0b8', font: { size: 11 } },
+          ticks: { display: false }
+        }
+      }
+    }
+  });
+}
+
+document.getElementById('refreshTrends').addEventListener('click', () => {
+  const btn = document.getElementById('refreshTrends');
+  btn.disabled = true;
+  btn.textContent = '⏳ 分析中...';
+  setTimeout(() => {
+    btn.disabled = false;
+    btn.textContent = '🔄 刷新分析';
+    showToast('💡 在主会话中搜索 "CBA 近三年数据趋势 得分 篮板 对比分析" 即可更新图表');
+  }, 1200);
+});
+
+/* ============================================
+   Section 4: Schedule
+   ============================================ */
+function renderSchedule() {
+  const list = document.getElementById('scheduleList');
+
+  list.innerHTML = SCHEDULE_DATA.map(g => {
+    let scoreHtml = '';
+    let statusHtml = '';
+
+    if (g.status === 'done') {
+      const hWin = g.homeScore > g.awayScore;
+      scoreHtml = `<span class="${hWin ? 'winner' : 'loser'}">${g.homeScore}</span> - <span class="${hWin ? 'loser' : 'winner'}">${g.awayScore}</span>`;
+      statusHtml = '<span class="schedule-status status-done">已结束</span>';
+    } else {
+      scoreHtml = '<span class="upcoming">vs</span>';
+      statusHtml = '<span class="schedule-status status-upcoming">待进行</span>';
+    }
+
+    return `
+      <div class="schedule-item">
+        <span class="schedule-date">${g.date}</span>
+        <div class="schedule-matchup">
+          <span class="schedule-team home">${g.home}</span>
+          <span class="schedule-score">${scoreHtml}</span>
+          <span class="schedule-team away">${g.away}</span>
+        </div>
+        ${statusHtml}
+      </div>
+    `;
+  }).join('');
+}
+
+document.getElementById('refreshSchedule').addEventListener('click', () => {
+  const btn = document.getElementById('refreshSchedule');
+  btn.disabled = true;
+  btn.textContent = '⏳ 搜索中...';
+  setTimeout(() => {
+    btn.disabled = false;
+    btn.textContent = '🔄 搜索最新赛程';
+    showToast('💡 在主会话中搜索 "CBA 2025-26赛季 季后赛赛程 最新比分" 即可更新');
+  }, 1200);
+});
+
+/* ============================================
+   Init
+   ============================================ */
+renderPlayers();
+renderTeams();
+</script>
+</body>
+</html>
